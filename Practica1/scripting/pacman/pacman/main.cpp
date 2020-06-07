@@ -1,12 +1,40 @@
 #include <pacman_include.hpp>
+#include <stdio.h>
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
 
+
+bool m_bLuaInitialized = false;
 int num_coins = 0;
 const int platas_para_oro = 5;
 const int bronces_para_plata = 100;
 
 const float max_vida = 1.5f;
-float vida = max_vida;
+float vida = max_vida; 
+lua_State* m_pLua;
 
+bool InitializeLua() 
+{
+	m_pLua = luaL_newstate(); /* crea el entorno de lua */
+	luaL_openlibs(m_pLua); /* abre las librerias */
+	int error = luaL_loadfile(m_pLua, "lua/pacman.lua"); /* carga el codigo en la pila */
+	error |= lua_pcall(m_pLua, 0, 0, 0); /* ejecuta el codigo */
+	if (error) {
+		fprintf(stderr, "%s", lua_tostring(m_pLua, -1)); /* el mensaje de error esta en la cima de la pila */
+		lua_pop(m_pLua, 1); /* quitar el mensaje de error de la pila */
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+void FinalizeLua()
+{
+	lua_close(m_pLua); /* cierra el entorno */
+}
 bool pacmanEatenCallback(int& score, bool& muerto)
 { // Pacman ha sido comido por un fantasma
 	vida -= 0.5f;
@@ -89,10 +117,12 @@ bool removeImmuneCallback()
 
 bool InitGame()
 {
+	m_bLuaInitialized = InitializeLua();
     return true;
 }
 
 bool EndGame()
 {
+	FinalizeLua();
     return true;
 }
