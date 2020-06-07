@@ -12,7 +12,13 @@ const int bronces_para_plata = 100;
 
 const float max_vida = 1.5f;
 float vida = max_vida; 
+
 lua_State* m_pLua;
+
+int m_iCoinScore = 0, m_iScoreToBronze = 0;
+float m_fPowerupDuration = 0, m_fSpeedMultiplicator = 0;
+
+
 
 bool InitializeLua() 
 {
@@ -27,6 +33,17 @@ bool InitializeLua()
 	}
 	else
 	{
+
+		lua_getglobal( m_pLua,  "coin_score");
+		lua_getglobal(m_pLua, "score_to_bronze");
+		lua_getglobal(m_pLua, "powerup_duration");
+		lua_getglobal(m_pLua, "speed_multiplicator");
+
+		m_iCoinScore = lua_tointeger(m_pLua, 1);
+		m_iScoreToBronze = lua_tointeger(m_pLua, 2);
+		m_fPowerupDuration = lua_tonumber(m_pLua, 3);
+		m_fSpeedMultiplicator = lua_tonumber(m_pLua, 4);
+
 		return true;
 	}
 }
@@ -46,7 +63,7 @@ bool pacmanEatenCallback(int& score, bool& muerto)
 bool coinEatenCallback(int& score)
 { // Pacman se ha comido una moneda
 	++num_coins;
-	score = num_coins * 50;
+	score = num_coins * m_iCoinScore;
 
 	return true;
 }
@@ -63,9 +80,9 @@ bool ghostEatenCallback(int& score)
 
 bool powerUpEatenCallback(int& score)
 { // Pacman se ha comido un powerUp
-	setPacmanSpeedMultiplier(2.0f);
+	setPacmanSpeedMultiplier(m_fSpeedMultiplicator);
 	setPacmanColor(0, 255, 0);
-	setPowerUpTime(5);
+	setPowerUpTime(m_fPowerupDuration);
 
 	score += 5000;
 
@@ -90,8 +107,10 @@ bool pacmanRestarted(int& score)
 
 bool computeMedals(int& oro, int& plata, int& bronce, int score)
 {
-	plata = score / bronces_para_plata;
-	bronce = score % bronces_para_plata;
+	bronce = score / m_iScoreToBronze;
+
+	plata = bronce / bronces_para_plata;
+	bronce = bronce % bronces_para_plata;
 	
 	oro = plata / platas_para_oro;
 	plata = plata % platas_para_oro;
